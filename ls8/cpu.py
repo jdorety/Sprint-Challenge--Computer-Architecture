@@ -12,7 +12,7 @@ class CPU:
         self.reg = [00000000] * 8
         self.pc = 0
         self.stack = [0b0] * 255
-        self.fl = 0b00000000
+        self.equal = 0b00000000
         self.HLT = 0b0001
         self.LDI = 0b0010
         self.PRN = 0b0111
@@ -25,6 +25,7 @@ class CPU:
         self.CMP = 0b0111
         self.JMP = 0b0100
         self.JEQ = 0b0101
+        self.JNE = 0b0110
 
     def ram_read(self, mar):
         mdr = self.ram[mar]
@@ -69,11 +70,11 @@ class CPU:
             val_2 = self.reg[reg_b]
 
             if val_1 < val_2:
-                self.fl = 0b00000100
+                self.equal = 0b00000100
             elif val_1 > val_2:
-                self.fl = 0b00000010
+                self.equal = 0b00000010
             else:
-                self.fl = 0b00000001
+                self.equal = 0b00000001
 
         else:
             raise Exception("Unsupported ALU operation")
@@ -136,9 +137,17 @@ class CPU:
         self.pc = self.reg[register_address]
 
     def handle_JEQ(self, register_address):
-        comp_flag = self.fl
-        equal = comp_flag & 0b00000001
+        cmp_flag = self.equal
+        equal = cmp_flag & 0b00000001
         if equal == 1:
+            self.pc = self.reg[register_address]
+        else:
+            self.pc += 2
+
+    def handle_JNE(self, register_address):
+        cmp_flag = self.equal
+        equal = cmp_flag & 0b00000001
+        if equal == 0:
             self.pc = self.reg[register_address]
         else:
             self.pc += 2
@@ -155,6 +164,8 @@ class CPU:
             alu = (ir >> 5) & 0b001
             set_pc = (ir >> 4) & 0b0001
 
+            # print(self.pc, bin(ir), operands, function, alu, set_pc)
+
             if set_pc == 1:
                 if function == self.CALL:
                     self.handle_CALL(self.ram[self.pc + 1])
@@ -164,6 +175,8 @@ class CPU:
                     self.handle_JMP(self.ram[self.pc + 1])
                 elif function == self.JEQ:
                     self.handle_JEQ(self.ram[self.pc + 1])
+                elif function == self.JNE:
+                    self.handle_JNE(self.ram[self.pc + 1])
 
             else:
                 if alu == 1:
