@@ -164,7 +164,6 @@ class CPU:
             alu = (ir >> 5) & 0b001
             set_pc = (ir >> 4) & 0b0001
 
-            # print(self.pc, bin(ir), operands, function, alu, set_pc)
 
             if set_pc == 1:
                 if function == self.CALL:
@@ -189,8 +188,8 @@ class CPU:
                                  self.ram[self.pc + 2])
 
                     elif function == self.CMP:
-                        self.alu(
-                            "CMP", self.ram[self.pc + 1], self.ram[self.pc + 2])
+                        self.alu("CMP", self.ram[self.pc + 1],
+                                 self.ram[self.pc + 2])
 
                 elif function == self.HLT:
                     running = False
