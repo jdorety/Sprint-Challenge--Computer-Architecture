@@ -8,10 +8,11 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.ram = [00000000] * 32
+        self.ram = [00000000] * 255
         self.reg = [00000000] * 8
         self.pc = 0
         self.stack = [0b0] * 255
+        self.fl = 0b00000000
         self.HLT = 0b0001
         self.LDI = 0b0010
         self.PRN = 0b0111
@@ -21,6 +22,8 @@ class CPU:
         self.PUSH = 0b0101
         self.CALL = 0b0000
         self.RET = 0b0001
+        self.CMP = 0b0111
+        self.JMP = 0b0100
 
     def ram_read(self, mar):
         mdr = self.ram[mar]
@@ -56,9 +59,21 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+
         elif op == "MUL":
-            # elif op == "SUB": etc
             self.reg[reg_a] *= self.reg[reg_b]
+
+        elif op == "CMP":
+            val_1 = self.reg[reg_a]
+            val_2 = self.reg[reg_b]
+
+            if val_1 < val_2:
+                self.fl = 0b00000100
+            elif val_1 > val_2:
+                self.fl = 0b00000010
+            else:
+                self.fl = 0b00000001
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -116,6 +131,9 @@ class CPU:
 
         self.pc = return_add
 
+    def handle_JMP(self, register_address):
+        self.pc = self.reg[register_address]
+
     def run(self):
         """Run the CPU."""
         running = True
@@ -128,27 +146,35 @@ class CPU:
             alu = (ir >> 5) & 0b001
             set_pc = (ir >> 4) & 0b0001
 
+
             if set_pc == 1:
                 if function == self.CALL:
                     self.handle_CALL(self.ram[self.pc + 1])
                 elif function == self.RET:
                     self.handle_RET()
+                elif function == self.JMP:
+                    self.handle_JMP(self.ram[self.pc + 1])
 
             else:
                 if alu == 1:
                     if function == self.MUL:
                         self.alu("MUL", self.ram[self.pc + 1],
-                                self.ram[self.pc + 2])
+                                 self.ram[self.pc + 2])
 
                     elif function == self.ADD:
                         self.alu("ADD", self.ram[self.pc + 1],
-                                self.ram[self.pc + 2])
+                                 self.ram[self.pc + 2])
+
+                    elif function == self.CMP:
+                        self.alu(
+                            "CMP", self.ram[self.pc + 1], self.ram[self.pc + 2])
 
                 elif function == self.HLT:
                     running = False
 
                 elif function == self.LDI:
-                    self.handle_LDI(self.ram[self.pc + 1], self.ram[self.pc + 2])
+                    self.handle_LDI(
+                        self.ram[self.pc + 1], self.ram[self.pc + 2])
 
                 elif function == self.PRN:
                     self.handle_PRN(self.ram[self.pc + 1])
