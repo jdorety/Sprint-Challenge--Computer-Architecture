@@ -24,6 +24,7 @@ class CPU:
         self.RET = 0b0001
         self.CMP = 0b0111
         self.JMP = 0b0100
+        self.JEQ = 0b0101
 
     def ram_read(self, mar):
         mdr = self.ram[mar]
@@ -134,6 +135,14 @@ class CPU:
     def handle_JMP(self, register_address):
         self.pc = self.reg[register_address]
 
+    def handle_JEQ(self, register_address):
+        comp_flag = self.fl
+        equal = comp_flag & 0b00000001
+        if equal == 1:
+            self.pc = self.reg[register_address]
+        else:
+            self.pc += 2
+
     def run(self):
         """Run the CPU."""
         running = True
@@ -146,7 +155,6 @@ class CPU:
             alu = (ir >> 5) & 0b001
             set_pc = (ir >> 4) & 0b0001
 
-
             if set_pc == 1:
                 if function == self.CALL:
                     self.handle_CALL(self.ram[self.pc + 1])
@@ -154,6 +162,8 @@ class CPU:
                     self.handle_RET()
                 elif function == self.JMP:
                     self.handle_JMP(self.ram[self.pc + 1])
+                elif function == self.JEQ:
+                    self.handle_JEQ(self.ram[self.pc + 1])
 
             else:
                 if alu == 1:
